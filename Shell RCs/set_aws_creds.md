@@ -10,6 +10,8 @@ Sometimes we have too many AWS Profiles, following shell functions makes it easy
 
 ## Bash
 
+Put following in `~/.bashrc`
+
 ```bash
 _complete_set_profile_aws() {
   if [ "${#COMP_WORDS[@]}" != "2" ]; then
@@ -46,6 +48,8 @@ complete -F _complete_set_profile_aws set_profile_aws
 ```
 
 ## Zsh
+
+Put following in `~/.zshrc`
 
 ```bash
 _set_profile_aws() {

@@ -7,7 +7,6 @@ Sometimes we have too many AWS Profiles, following shell functions makes it easy
 - `set_profile_aws PROFILE_NAME`: Equivalent of `export AWS_PROFILE=PROFILE_NAME`, but with autocompletion
 - `set_creds_aws A_KEY S_KEY TOKEN`: Equivalent of `export AWS_ACCESS_KEY=A_KEY AWS_SECRET_ACCESS_KEY=S_KEY [AWS_SESSION_TOKEN=TOKEN]`, but shorter.
 
-
 ## Bash
 
 Put following in `~/.bashrc`
@@ -51,23 +50,28 @@ complete -F _complete_set_profile_aws set_profile_aws
 
 Put following in `~/.zshrc`
 
+If the following already exists, avoid it.
+
 ```bash
-_set_profile_aws() {
-  if [[ ${words[2]} ]]
-  then
+autoload -U +X compinit && compinit
+autoload -U +X bashcompinit && bashcompinit
+```
+
+```bash
+_complete_set_profile_aws() {
+  if [ "${#COMP_WORDS[@]}" != "2" ]; then
     return
   fi
-  compadd $(grep -E '\[profile' ~/.aws/config | grep -o -E '[[:space:]][[:alnum:]].+[[:alnum:]]')
+  local profile_names
+  profile_names="$(grep -E '\[profile' ~/.aws/config | grep -o -E '[[:space:]][[:alnum:]].+[[:alnum:]]')"
   if ( grep default ~/.aws/config &>/dev/null )
   then
-    compadd 'default'
+    profile_names+=( 'default' )
   fi
+  COMPREPLY=($(compgen -W "${profile_names[*]}" -- "${COMP_WORDS[1]}"))
 }
 
-compdef _set_profile_aws set_profile_aws
-
-function set_profile_aws() {
-  autoload colors; colors
+set_profile_aws() {
   unset AWS_ACCESS_KEY_ID
   unset AWS_SECRET_ACCESS_KEY
   unset AWS_SESSION_TOKEN
@@ -79,9 +83,11 @@ function set_profile_aws() {
   fi
   if [ $AWS_PROFILE ]
   then
-    echo -e "\n$fg[green]AWS profile is set to $fg[red]${AWS_PROFILE}\n $reset_color"
+    echo -e "\n$(tput setaf 2)AWS profile is set to $(tput setaf 1)${AWS_PROFILE}\n $(tput init)"
   else
-    echo -e "\n$fg[blue] AWS Profile is unset\n$reset_color"
+    echo -e "\n$(tput setaf 4) AWS Profile is unset\n$(tput init)"
   fi
 }
+
+complete -F _complete_set_profile_aws set_profile_aws
 ```

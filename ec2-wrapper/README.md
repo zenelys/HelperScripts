@@ -64,4 +64,3 @@ ${SCRIPT_NAME} completion | sudo tee /usr/share/bash-completion/completions/"${S
   Options:
     -h, --help:   Print this message and exit
 ```
-

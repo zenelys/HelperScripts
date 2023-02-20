@@ -5,7 +5,6 @@ import argparse
 import botocore
 import boto3
 
-
 def permanently_delete_object(
     bucket_name: str = None,
     region: str = None,
@@ -23,9 +22,9 @@ def permanently_delete_object(
     s3 = boto3.resource("s3", region_name=region, endpoint_url=endpoint_url)
     bucket = s3.Bucket(bucket_name)
     _message = (
-        f"Deleting {bucket_name}/{prefix} ..."
+        f"Permanetely deleting s3://{bucket_name}/{prefix} ..."
         if prefix
-        else f"Deleting {bucket_name} ..."
+        else f"permanently deleting all object versions in the s3://{bucket_name} ..."
     )
     print(_message, flush=True)
     try:
@@ -40,10 +39,7 @@ def permanently_delete_object(
                 f"Permanently deleted all versions of all objects in the s3://{bucket_name}."
             )
     except botocore.exceptions.ClientError as ex:
-        print(
-            f"Couldn't delete all versions of {prefix} in {bucket_name}.\nError: {str(ex)}",
-            file=sys.stderr,
-        )
+        print(f"Couldn't delete all versions of {prefix} in {bucket_name}.\nError: {str(ex)}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -77,9 +73,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    if args.prefix == 'all':
+        prefix = None
     permanently_delete_object(
         bucket_name=args.bucket,
         region=args.region,
-        prefix=args.prefix,
+        prefix=prefix,
         endpoint_url=args.endpoint,
     )

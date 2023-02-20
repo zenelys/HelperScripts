@@ -8,7 +8,7 @@
 ## Installation
 
 1. Make all files `executable` in the `bin`
-2. Copy `bin` to somewhere in the `$PATH`
+2. Copy `bin` to the somewhere in the `$PATH`
 
 ```bash
 git clone git@github.com:zenelys/HelperScripts.git
@@ -19,4 +19,4 @@ cp bin/* ~/.local/bin/
 
 ## Scripts
 
-- `empty_s3_bucket.py`: To empty entire s3 bucket or delete folder (prefix) with all versions (permanently)
+- `empty_s3_bucket.py`: To empty entire s3 bucket or delete folder (prefix) with all versions

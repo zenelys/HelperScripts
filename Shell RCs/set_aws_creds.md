@@ -44,6 +44,21 @@ set_profile_aws() {
 }
 
 complete -F _complete_set_profile_aws set_profile_aws 
+
+set_creds_aws() {
+  if ! [ "$1" ]
+  then
+    unset AWS_ACCESS_KEY_ID
+    unset AWS_SECRET_ACCESS_KEY
+    unset AWS_SESSION_TOKEN
+    echo -e "\n$(BLUE) AWS credentials are unset\n$(RESET)"
+    return
+  fi
+  unset  AWS_PROFILE AWS_SESSION_TOKEN
+  export AWS_ACCESS_KEY_ID="$1"
+  export AWS_SECRET_ACCESS_KEY="$2"
+  [ -n "$3" ] && export AWS_SESSION_TOKEN="$3"
+}
 ```
 
 ## Zsh
@@ -90,4 +105,19 @@ set_profile_aws() {
 }
 
 complete -F _complete_set_profile_aws set_profile_aws
+
+set_creds_aws() {
+  if ! [ "$1" ]
+  then
+    unset AWS_ACCESS_KEY_ID
+    unset AWS_SECRET_ACCESS_KEY
+    unset AWS_SESSION_TOKEN
+    echo -e "AWS credentials are unset"
+    return
+  fi
+  unset  AWS_PROFILE AWS_SESSION_TOKEN
+  export AWS_ACCESS_KEY_ID="$1"
+  export AWS_SECRET_ACCESS_KEY="$2"
+  [ -n "$3" ] && export AWS_SESSION_TOKEN="$3"
+}
 ```

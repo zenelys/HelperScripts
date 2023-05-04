@@ -28,7 +28,7 @@ def permanently_delete_object(
     )
     print(_message, flush=True)
     try:
-        if prefix:
+        if prefix != "all":
             bucket.object_versions.filter(Prefix=prefix).delete()
             print(
                 f"Permanently deleted {prefix}/ in the s3://{bucket_name}.",

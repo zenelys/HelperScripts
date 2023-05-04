@@ -5,12 +5,13 @@ usage() {
   Usage: ${0##*/} command [INSTANCE_NAME]
   Commands:
     add     [INSTANCE_NAME]:    Add configuration preset
-    connect   INSTANCE_NAME:    Connect to AWS EC2 instance using InstanceID attached to INSTANCE_NAME 'mssh'
+    connect   INSTANCE_NAME:    Connect to AWS EC2 instance using InstanceID attached to INSTANCE_NAME using 'mssh'
     delete  [INSTANCE_NAME]:    Delete configuration presets for INSTANCE_ID
-    start     INSTANCE_NAME:    Start AWS EC2 instance using InstanceID attached to INSTANCE_NAME 'aws'
-    stop      INSTANCE_NAME:    Stop AWS EC2 instance using InstanceID attached to INSTANCE_NAME 'aws'
-    reboot    INSTANCE_NAME:    Reboot AWS EC2 instance using InstanceID attached to INSTANCE_NAME 'aws'
-    terminate INSTANCE_NAME:    Terminate AWS EC2 instance using InstanceID attached to INSTANCE_NAME 'aws'
+    start     INSTANCE_NAME:    Start AWS EC2 instance using InstanceID attached to INSTANCE_NAME using 'aws'
+    stop      INSTANCE_NAME:    Stop AWS EC2 instance using InstanceID attached to INSTANCE_NAME using 'aws'
+    reboot    INSTANCE_NAME:    Reboot AWS EC2 instance using InstanceID attached to INSTANCE_NAME using 'aws'
+    terminate INSTANCE_NAME:    Terminate AWS EC2 instance using InstanceID attached to INSTANCE_NAME using 'aws'
+    state     INSTANCE_NAME:    Return the Ec2 instance state attached to INSTANCE_NAME using 'aws'
     completion:                 Output bash completion script
     show:                       Show preset configuration
     init:                       Create config file '~/.config/${0##*/}.yaml' and check requirements: 
@@ -36,6 +37,7 @@ __complete_mssh_c() {
 	[stop]=1 
 	[reboot]=1 
 	[terminate]=1 
+	[state]=1 
 	[completion]=1 
 	[show]=1 
 	[init]=1
@@ -112,6 +114,11 @@ init() {
     if [ "${error}" == 'True' ]
     then
         exit 1
+    fi
+
+    if ! ( command -v aws &>/dev/null )
+    then
+        echo -e "\033[01;33m  Warning. Exectable 'aws' not fount. Commands delete,start,stop,reboot,terminate,state won't be available\033[00m"
     fi
 
     if ! [ -f "$HOME/.config/${0##*/}.yaml" ] || ! ( grep '^configs:' "$HOME/.config/${0##*/}.yaml" &>/dev/null )
@@ -230,6 +237,11 @@ delete() {
 }
 
 __do_work() {
+    if ! ( command -v aws &>/dev/null )
+    then
+        echo -e "\033[01;31m  Error. Exectable 'aws' not fount\033[00m\n  Install from: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
+        exit 1
+    fi
     if [ "${1}" ]
     then
         _name="${1}"
@@ -249,11 +261,11 @@ __do_work() {
     _access_key="$(yq '.configs.[env(NAME)].access_key' "$HOME/.config/${0##*/}.yaml")"
     _secret_key="$(yq '.configs.[env(NAME)].secret_key' "$HOME/.config/${0##*/}.yaml")"
     _region="$(yq '.configs.[env(NAME)].region' "$HOME/.config/${0##*/}.yaml")"
-
+    shift
     if [ "${_profile}" ]
     then
         export AWS_PROFILE="${_profile}"
-        aws ec2 "${2}" --instance-ids "${_id}" --region "${_region}"
+        aws ec2 "$@" --instance-ids "${_id}" --region "${_region}"
         if [ "${CURRENT_PROFILE}" ]
         then
             export AWS_PROFILE="${CURRENT_PROFILE}"
@@ -261,7 +273,7 @@ __do_work() {
     else
         export AWS_ACCESS_KEY_ID="${_access_key}" 
         export AWS_SECRET_ACCESS_KEY="${_secret_key}"
-        aws ec2 "${2}" --instance-ids "${_id}" --region "${_region}"
+        aws ec2 "$@" --instance-ids "${_id}" --region "${_region}"
     fi
 }
 
@@ -345,6 +357,10 @@ case "${1}" in
     terminate)
         __unset_aws
         __do_work "${2}" "terminate-instances"
+    ;;
+    state)
+        __unset_aws
+        __do_work "${2}" describe-instances --query "Reservations[*].Instances[*].[State.Name]" --output text
     ;;
     completion)
         completion

@@ -4,7 +4,7 @@ Wrapper script on [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/get
 
 ## Requirements
 
-- [bash](https://www.gnu.org/software/bash/) as shell
+- [bash](https://www.gnu.org/software/bash/) as shell, 4.2 or higher version
 - [GNU grep](https://www.gnu.org/software/grep/manual/grep.html)
 - [python3](https://www.python.org/)
 - [python3-pip](https://github.com/pypa/pip)

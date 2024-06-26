@@ -1,0 +1,13 @@
+name: Test Docker Runner
+
+on: [push, workflow_dispatch]
+
+jobs:
+  test-job:
+    runs-on: self-hosted
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Run a one-line script
+      run: echo "The runner is working!"

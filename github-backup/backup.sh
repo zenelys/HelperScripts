@@ -118,7 +118,7 @@ upload() {
 }
 
 upload_s3() {
-pip3 install -qqq boto3
+pip3 install -qqq boto3 --break-system-packages
 if ! ( cat << EOF | python3
 import os
 import sys
@@ -140,7 +140,7 @@ fi
 }
 
 upload_gs() {
-pip install -qqq google-cloud-storage
+pip install -qqq google-cloud-storage --break-system-packages
 if ! ( cat << EOF | python3
 import os
 import sys
@@ -226,7 +226,7 @@ install_deps() {
 }
 
 git_clone() {
-    rm .error_log || true
+    rm .error_log &>/dev/null || true
     if [ "$GH_BOT_USERNAME" ] && [ "$GH_BOT_PAT" ]; then
         git clone --mirror "https://$GH_BOT_USERNAME:$GH_BOT_PAT@github.com/$GH_ORG/$1" 2>.error_log
     else

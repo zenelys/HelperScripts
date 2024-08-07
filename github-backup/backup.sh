@@ -139,7 +139,7 @@ import sys
 import boto3
 try:
     bucket_name = os.environ.get('BACKUP_BUCKET').rsplit('/', maxsplit=1)[-1]
-    boto3.client('s3').uplod_file(Filename='$1', Bucket=bucket_name, Key='github-backups/$1')
+    boto3.client('s3').upload_file(Filename='$1', Bucket=bucket_name, Key='github-backups/$1')
 except Exception as ex:
     print('[ERROR] ' + str(ex))
     sys.exit(1)
@@ -147,7 +147,8 @@ except Exception as ex:
 EOF
 ); then
     log error "failed to upload backup"
-    exit 1
+    REPOS_SUCCEEDED=()
+    readarray -t -d',' REPOS_FAILED <<< "$REPOSITORIES"
 else
     log info "backup uploaded"
 fi
@@ -171,7 +172,8 @@ except Exception as ex:
 EOF
 ); then
     log error "failed to upload backup"
-    exit 1
+    REPOS_SUCCEEDED=()
+    readarray -t -d',' REPOS_FAILED <<< "$REPOSITORIES"
 else
     log info "backup uploaded"
 fi

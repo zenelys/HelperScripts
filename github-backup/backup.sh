@@ -78,7 +78,6 @@ notify_slack() {
         body=$(RS="$repo_status" yq -oj '.blocks[0].elements[4].elements += env(RS)' <<< "$body")
     done
     body="$(yq -oj '.channel = env(SLACK_CHANNEL)' <<< "$body")"
-    echo "$body" > /tmp/test/body.json
     resp="$(curl -s -X POST https://slack.com/api/chat.postMessage \
         -H 'Content-Type: application/json; charset=utf-8' \
         -H "Authorization: Bearer $SLACK_TOKEN" \
@@ -226,13 +225,17 @@ install_deps() {
     esac
 }
 
-git_mirror() {
+git_clone() {
     if [ "$GH_BOT_USERNAME" ] && [ "$GH_BOT_PAT" ]; then
         git clone --mirror "https://$GH_BOT_USERNAME:$GH_BOT_PAT@github.com/$GH_ORG/$1" &>/dev/null
         return
     fi
-    git clone --mirror "git@github.com/$GH_ORG/$1" &>/dev/null
-    git clone "$1.git" "repos/$1" &>/dev/null
+    rm .log || true
+    git clone --mirror "git@github.com/$GH_ORG/$1" 2>/.log
+    git clone "$1.git" "repos/$1" 2>>/.log
+    if [ -f .log ]; then
+        log error "$(cat .log)"
+    fi
 }
 
 install_deps
@@ -251,7 +254,7 @@ repo_count="${#repos[@]}"
 for ((i=0;i<repo_count-1;i++)); do
     r="${repos[$i]}"
     log info "downloding repo: $r"
-    if ! (git_mirror "$r"); then
+    if ! (git_clone "$r"); then
        log error "failed to backup repository: $r"
        REPOS_FAILED+=( "$r" )
        continue

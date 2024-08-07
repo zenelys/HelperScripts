@@ -256,7 +256,6 @@ for ((i=0;i<repo_count-1;i++)); do
     fi
     REPOS_SUCCEEDED+=( "$r" )
 done
-log info "backup done"
 log info "creating zip from repo directories"
 zip -q -r "$today.zip"  "repos"
 log info "uploading backup to $BACKUP_BUCKET"

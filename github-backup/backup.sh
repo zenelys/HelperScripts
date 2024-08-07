@@ -82,7 +82,7 @@ notify_slack() {
         -H 'Content-Type: application/json; charset=utf-8' \
         -H "Authorization: Bearer $SLACK_TOKEN" \
         -d "$body")"
-    if [ "$(yq .ok <<< "$resp")" != 'true' ]; then
+    if [ "$(yq -p json .ok <<< "$resp")" != 'true' ]; then
         log error "failed to post status in slack: $resp"
     else
         log info "posted status in slack"

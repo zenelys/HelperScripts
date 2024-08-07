@@ -191,14 +191,14 @@ install_deps() {
             if [ "$EUID" != 0 ]; then
                 sudo apt-get update -qq
                 sudo apt-get -qq install -y git zip python3 python3-pip curl ssh
-                if ! (hash yq); then
+                if ! (hash yq &>/dev/null); then
                     sudo curl -fsSLo "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64"
                     chmod +x /usr/bin/yq
                 fi
             else
                 apt-get update -qq
                 apt-get -qq install -y git zip python3 python3-pip curl ssh
-                if ! (hash yq); then
+                if ! (hash yq &>/dev/null); then
                     curl -fsSLo "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64"
                     chmod +x /usr/bin/yq
                 fi
@@ -207,13 +207,13 @@ install_deps() {
         fedora |centos | redhat | alma)
             if [ "$EUID" != 0 ]; then
                 sudo yum install -q -y git zip python3 python3-pip curl openssh
-                if ! (hash yq); then
+                if ! (hash yq &>/dev/null); then
                     sudo curl -fsSLo "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64"
                     chmod +x /usr/bin/yq
                 fi
             else
                 yum install -q -y git zip python3 python3-pip curl openssh
-                if ! (hash yq); then
+                if ! (hash yq &>/dev/null); then
                     curl -fsSLo "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64"
                     chmod +x /usr/bin/yq
                 fi
@@ -222,13 +222,13 @@ install_deps() {
         alpine)
             if [ "$EUID" != 0 ]; then
                 sudo apk add -qqq git zip python3 py3-pip curl openssh
-                if ! (hash yq); then
+                if ! (hash yq &>/dev/null); then
                     sudo curl -fsSLo "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64"
                     chmod +x /usr/bin/yq
                 fi
             else
                 apk add -qqq git zip python3 py3-pip curl openssh
-                if ! (hash yq); then
+                if ! (hash yq &>/dev/null); then
                     curl -fsSLo "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64"
                     chmod +x /usr/bin/yq
                 fi

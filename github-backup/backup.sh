@@ -206,13 +206,13 @@ install_deps() {
             ;;
         fedora |centos | redhat | alma)
             if [ "$EUID" != 0 ]; then
-                sudo yum install -q -y git zip python3 python3-pip curl ssh
+                sudo yum install -q -y git zip python3 python3-pip curl openssh
                 if ! (hash yq); then
                     sudo curl -fsSLo "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64"
                     chmod +x /usr/bin/yq
                 fi
             else
-                yum install -q -y git zip python3 python3-pip curl ssh
+                yum install -q -y git zip python3 python3-pip curl openssh
                 if ! (hash yq); then
                     curl -fsSLo "/usr/bin/yq" "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64"
                     chmod +x /usr/bin/yq
@@ -246,7 +246,7 @@ git_clone() {
     if [ "$GH_BOT_USERNAME" ] && [ "$GH_BOT_PAT" ]; then
         git clone --mirror "https://$GH_BOT_USERNAME:$GH_BOT_PAT@github.com/$GH_ORG/$1" 2>.error_log
     else
-        git clone --mirror "git@github.com/$GH_ORG/$1" 2>.error_log
+        git clone --mirror "git@github.com:$GH_ORG/$1" 2>.error_log
     fi
     git clone "$1.git" "repos/$1" 2>>.error_log
     if [ -f .log ]; then
@@ -257,7 +257,7 @@ git_clone() {
 install_deps
 today=$(date +"%Y-%m-%d_%H-%M-%S")
 rm -rf backups || true
-IFS='' readarray -t -d ',' repos <<< "${REPOSITORIES}"
+readarray -t -d ',' repos <<< "${REPOSITORIES}"
 mkdir backups
 cd backups
 mkdir repos

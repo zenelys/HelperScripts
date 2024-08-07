@@ -242,11 +242,6 @@ install_deps
 today=$(date +"%Y-%m-%d_%H-%M-%S")
 rm -rf backups || true
 IFS='' readarray -t -d ',' repos <<< "${REPOSITORIES}"
-if ! [ "$GH_BOT_USERNAME" ] || ! [ "$GH_BOT_PAT" ]
-then
-    log error "github credentials not provided"
-    exit 1
-fi
 mkdir backups
 cd backups
 mkdir repos

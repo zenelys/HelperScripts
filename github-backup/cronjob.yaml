@@ -1,0 +1,69 @@
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: github-backup
+  namespace: cronjobs
+spec:
+  dataFrom:
+  - extract:
+      conversionStrategy: Default
+      decodingStrategy: None
+      key: kv/cronjobs/github-backup
+  refreshInterval: 15s
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: saas-secrets-eks
+  target:
+    creationPolicy: Owner
+    deletionPolicy: Retain
+    name: github-backup
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: github-backup
+  namespace: cronjobs
+spec:
+  schedule: "0 */6 * * *"
+  successfulJobsHistoryLimit: 0
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          automountServiceAccountToken: true
+          serviceAccountName: github-backup
+          nodeSelector:
+            role: operations
+          volumes:
+            - name: github-backup
+              configMap:
+                name: github-backup
+                defaultMode: 0770
+          containers:
+            - name: github-backup
+              image: bash
+              command:
+                - /bin/bash
+                - "-c"
+                - /scripts/github-backup.sh
+              securityContext:
+                readOnlyRootFilesystem: false
+              envFrom:
+              - secretRef:
+                  name: github-backup
+          restartPolicy: Never
+
+---
+apiVersion: v1
+kind: ServiceAccount
+automountServiceAccountToken: true
+metadata:
+  name: github-backup
+  namespace: cronjobs
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::879181872189:role/github-backup
+

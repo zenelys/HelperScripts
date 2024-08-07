@@ -226,12 +226,12 @@ install_deps() {
 }
 
 git_clone() {
-    if [ "$GH_BOT_USERNAME" ] && [ "$GH_BOT_PAT" ]; then
-        git clone --mirror "https://$GH_BOT_USERNAME:$GH_BOT_PAT@github.com/$GH_ORG/$1" &>/dev/null
-        return
-    fi
     rm .log || true
-    git clone --mirror "git@github.com/$GH_ORG/$1" 2>/.log
+    if [ "$GH_BOT_USERNAME" ] && [ "$GH_BOT_PAT" ]; then
+        git clone --mirror "https://$GH_BOT_USERNAME:$GH_BOT_PAT@github.com/$GH_ORG/$1" 2>/dev/null
+    else
+        git clone --mirror "git@github.com/$GH_ORG/$1" 2>/.log
+    fi
     git clone "$1.git" "repos/$1" 2>>/.log
     if [ -f .log ]; then
         log error "$(cat .log)"

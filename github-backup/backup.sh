@@ -9,8 +9,8 @@ REPO_NAME_TEMPLATE='{
     "elements": []
 }'
 SLACK_TEMPLATE='{
-    "icon_emoji": ":githubloading:",
-    "username": "backup-bot",
+    "icon_emoji": ":hammer_and_wrench:",
+    "username": "github-backups",
     "blocks": [
         {
             "type": "rich_text",

@@ -1,0 +1,224 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: on-call-schedule
+  namespace: cronjobs
+data:
+  main.py: |
+    import os
+    import sys
+    from time import sleep
+    import json
+    import requests
+    from requests.exceptions import RequestException
+
+    DEV_GROUP = "backend-team"
+    DEV_CANDIDATES = os.environ.get("DEV_CANDIDATES")
+    SRE_CANDIDATES = os.environ.get("SRE_CANDIDATES")
+    SRE_GROUP = "sre-team"
+    ON_CALL = "on-call"
+    GROUP_HANDLES = dict.fromkeys(
+    [DEV_GROUP, SRE_GROUP, ON_CALL, f"dev-{ON_CALL}", f"sre-{ON_CALL}"], None
+    )
+
+    NOTIFY_CHANNEL = os.environ.get("NOTIFY_CHANNEL")
+    ERROR_CHANNEL = os.environ.get("ERROR_CHANNEL")
+
+    HEADERS = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {os.environ.get('SLACK_TOKEN')}",
+    }
+
+
+    def error_slack(
+    header: str = "Failed to set on-call schedule", message: dict[str, str] = None
+    ) -> None:
+    url = "https://slack.com/api/chat.postMessage"
+    data = json.dumps(message) + "<!here>"
+    message = {
+        "text": "Failed Automation",
+        "channel": ERROR_CHANNEL,
+        "blocks": [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": header},
+            }
+        ],
+        "attachments": [
+            {
+                "color": "#cc3300",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {"type": "mrkdwn", "text": data},
+                    }
+                ],
+            }
+        ],
+    }
+    resp = requests.post(
+        url=url, headers=HEADERS, data=json.dumps(message).encode("utf-8")
+    ).content.decode()
+    if not json.loads(resp)["ok"]:
+        print("Total Failure")
+        print(json.loads(resp))
+        sys.exit(1)
+
+
+    def notify_slack(dev: list[str] = None, sre: list[str] = None) -> None:
+    dev_old = get_user_display_name(user_id=dev[0])
+    sleep(1)
+    dev_new = get_user_display_name(user_id=dev[1])
+    sleep(1)
+    sre_old = get_user_display_name(user_id=sre[0])
+    sleep(1)
+    sre_new = get_user_display_name(user_id=sre[1])
+    sleep(1)
+    body = (
+        "Group Name,Old Member(s),New Member(s)"
+        + f"\n{ON_CALL},{dev_old}|{sre_old},{dev_new}|{sre_new}"
+        + f"\ndev-{ON_CALL},{dev_old},{dev_new}"
+        + f"\nsre-{ON_CALL},{sre_old},{sre_new}"
+    )
+    resp = requests.post(
+        url="https://slack.com/api/files.upload",
+        headers={"Authorization": f"Bearer {os.environ.get('SLACK_TOKEN')}"},
+        data={
+            "channels": NOTIFY_CHANNEL,
+            "content": body,
+            "filename": "on-call-schedule",
+            "filetype": "csv",
+            "initial_comment": "<!here>. The new `on-call` schedule is:",
+            "title": "on-call-schedule",
+        },
+    ).content.decode()
+    if not json.loads(resp)["ok"]:
+        print("Failed to notify about new schedule")
+        error_slack(header="Failed to notify about new schedule", message=json.loads(resp))
+        sys.exit(1)
+
+
+    def get_user_display_name(user_id: str = None) -> str:
+    resp = json.loads(
+        requests.post(
+            url=f"https://slack.com/api/users.profile.get?user={user_id}",
+            headers=HEADERS,
+        ).content.decode()
+    )
+    if not resp["ok"]:
+        print("Failed to get get_user_display_name")
+        print(json.dumps(resp, indent=2), flush=True)
+        error_slack(header="Failed to get get_user_display_name", message=json.loads(resp))
+        sys.exit(1)
+    return resp["profile"]["display_name"]
+
+
+    def set_group_handles() -> None:
+    resp = requests.get(url="https://slack.com/api/usergroups.list", headers=HEADERS)
+    resp = json.loads(resp.content.decode())
+    if not resp["ok"]:
+        raise RequestException(resp)
+    for _, v in enumerate(resp["usergroups"]):
+        for _, i in enumerate(GROUP_HANDLES.keys()):
+            if v["handle"] == i:
+                GROUP_HANDLES[i] = v["id"]
+    if None in GROUP_HANDLES.values():
+        raise ValueError(GROUP_HANDLES)
+    return GROUP_HANDLES
+
+
+    def get_users_from_group(group_id: str = None) -> list[str]:
+    resp = requests.get(
+        url=f"https://slack.com/api/usergroups.users.list?usergroup={group_id}",
+        headers=HEADERS,
+    )
+    resp = json.loads(resp.content.decode())
+    if not resp["ok"]:
+        raise RequestException(resp)
+    _list: list[str] = resp["users"]
+    _list.sort()
+    return _list
+
+
+    def get_next_member(current: str = None, group: list[str] = None) -> int:
+    current_index = group.index(current)
+    return 0 if (current_index + 1) == len(group) else (current_index + 1)
+
+
+    def update_user_groups(dev: str = None, sre: str = None) -> dict[str, dict[str]]:
+    post_bodies = {
+        f"dev-{ON_CALL}": [dev],
+        f"sre-{ON_CALL}": [sre],
+        ON_CALL: [dev, sre],
+    }
+    return_dict = {}
+    for name in [f"dev-{ON_CALL}", f"sre-{ON_CALL}", ON_CALL]:
+        resp = requests.post(
+            url="https://slack.com/api/usergroups.users.update",
+            headers=HEADERS,
+            json={"usergroup": GROUP_HANDLES[name], "users": post_bodies[name]},
+        )
+        return_dict[name] = json.loads(resp.content.decode())
+    return return_dict
+
+
+    if __name__ == "__main__":
+    print("Starting On Call Schedule Change")
+    print("Getting groups")
+    try:
+        set_group_handles()
+    except RequestException as ex:
+        print("Slack API Error", flush=True)
+        print(json.dumps(ex.args[0], indent=2), flush=True)
+        error_slack(header="Failed to Get usergroups from Slack", message=json.dumps(ex.args[0]))
+        sys.exit(1)
+    except ValueError as ex:
+        print("Failed to get usergroup id", flush=True)
+        print(json.dumps(ex.args[0], indent=2), flush=True)
+        error_slack(header="Failed to get usergroup id from slack response", message=json.dumps(ex.args[0]))
+        sys.exit(1)
+    except Exception as ex:
+        print("Unhandeled exception in function call: set_group_handles", flush=True)
+        error_slack(header="Unhandeled exception in set_group_handles", message=json.dumps(ex.args[0]))
+        sys.exit(1)
+    print("Getting all dev team candidates")
+    all_dev = (
+        DEV_CANDIDATES.split(",")
+        if DEV_CANDIDATES
+        else get_users_from_group(GROUP_HANDLES[DEV_GROUP])
+    )
+    print("Getting all sre team members")
+    all_sre = (
+        SRE_CANDIDATES.split(",")
+        if SRE_CANDIDATES
+        else get_users_from_group(GROUP_HANDLES[SRE_GROUP])
+    )
+    try:
+        current_dev = get_users_from_group(GROUP_HANDLES[f"dev-{ON_CALL}"])[0]
+        sleep(1)
+        current_sre = get_users_from_group(GROUP_HANDLES[f"sre-{ON_CALL}"])[0]
+    except RequestException as ex:
+        print("Slack API Error", flush=True)
+        print(json.dumps(ex.args[0], indent=2), flush=True)
+        error_slack(header="Failed to get user users in group from Slack", message=json.dumps(ex.args[0]))
+        sys.exit(1)
+    except Exception as ex:
+        print("Unhandeled exception in function call: set_group_handles", flush=True)
+        error_slack(header="Unhandeled exception in set_group_handles", message=json.dumps(ex.args[0]))
+        sys.exit(1)
+    print("Getting next dev member")
+    next_dev = all_dev[get_next_member(current=current_dev, group=all_dev)]
+    print("Getting next sre member")
+    next_sre = all_sre[get_next_member(current=current_sre, group=all_sre)]
+    print("Updating usergroups in slack")
+    status = update_user_groups(dev=next_dev, sre=next_sre)
+    fail = {}
+    for k, i in status.items():
+        if not i["ok"]:
+            fail[k] = i["error"]
+    if fail:
+        error_slack(header="Failed to update usergroup in Slack", message=fail)
+        sys.exit(1)
+    print("Notifying in Channel")
+    notify_slack(dev=[current_dev, next_dev], sre=[current_sre, next_sre])

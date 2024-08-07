@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: on-call-schedule
+  namespace: cronjobs
+spec:
+  schedule: "0 8 * * MON"
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          nodeSelector:
+            role: operations
+          volumes:
+            - name: on-call-schedule
+              configMap:
+                name: on-call-schedule
+          containers:
+            - name: scheduler
+              image: zenelys/python:3.11-requests
+              command:
+              - python3
+              - /main.py
+              volumeMounts:
+                - name: on-call-schedule
+                  mountPath: /main.py
+                  subPath: main.py
+              resources:
+                limits:
+                  cpu: "200m"
+                  memory: 256Mi
+              envFrom:
+              - secretRef:
+                  name: on-call-schedule
+          restartPolicy: Never

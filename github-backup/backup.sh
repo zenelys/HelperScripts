@@ -61,7 +61,11 @@ SLACK_TEMPLATE='{
                     "elements": [
                         {
                             "type": "text",
-                            "text": "\nBackup Location: BACKUP_LOCATION\n\n"
+                            "text": "\nBackup Location: "
+                        },
+                        {
+                            "type": "text",
+                            "text": ""
                         }
                     ]
                 }
@@ -87,7 +91,7 @@ notify_slack() {
         body=$(RS="$repo_status" yq -oj '.blocks[0].elements[4].elements += env(RS)' <<< "$body")
     done
     body="$(yq -oj '.channel = env(SLACK_CHANNEL)' <<< "$body")"
-    body=$(RS="$repo_status" yq -oj '.blocks[0].elements[5].elements[0].text = env(BACKUP_LOCATION)' <<< "$body")
+    body=$(RS="$repo_status" yq -oj '.blocks[0].elements[5].elements[1].text = env(BACKUP_LOCATION)' <<< "$body")
     resp="$(curl -s -X POST https://slack.com/api/chat.postMessage \
         -H 'Content-Type: application/json; charset=utf-8' \
         -H "Authorization: Bearer $SLACK_TOKEN" \

@@ -274,5 +274,5 @@ log info "creating zip from repo directories"
 zip -q -r "$today.zip"  "repos"
 log info "uploading backup to $BACKUP_BUCKET"
 upload "$today.zip"
-export BACKUP_LOCATION="$BACKUP_BUCKET/$today.zip"
+export BACKUP_LOCATION="$BACKUP_BUCKET/github-backups/$today.zip"
 notify_slack
